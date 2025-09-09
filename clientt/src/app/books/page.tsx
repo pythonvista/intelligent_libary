@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
@@ -56,7 +56,7 @@ const BooksPageContent: React.FC = () => {
   });
 
   // Fetch books
-  const fetchBooks = async (page = 1, search = '', filterOptions = filters) => {
+  const fetchBooks = useCallback(async (page = 1, search = '', filterOptions = filters) => {
     try {
       setLoading(true);
       const response = await booksAPI.getBooks({
@@ -82,7 +82,7 @@ const BooksPageContent: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   // Handle search
   const handleSearch = (query: string) => {

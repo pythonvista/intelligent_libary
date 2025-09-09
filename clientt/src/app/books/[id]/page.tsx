@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
@@ -69,7 +69,7 @@ const BookDetailPage: React.FC = () => {
   const [isFavorite, setIsFavorite] = useState(false);
 
   // Fetch book details
-  const fetchBookDetails = async () => {
+  const fetchBookDetails = useCallback(async () => {
     if (!params.id) return;
     
     try {
@@ -86,7 +86,7 @@ const BookDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
 
   // Handle book borrowing
   const handleBorrow = async () => {

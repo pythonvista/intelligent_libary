@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
@@ -56,7 +56,7 @@ const EditBookPage: React.FC = () => {
   }, [isAuthenticated, user, router]);
 
   // Fetch book data
-  const fetchBook = async () => {
+  const fetchBook = useCallback(async () => {
     if (!params.id) return;
     
     try {
@@ -92,7 +92,7 @@ const EditBookPage: React.FC = () => {
     } finally {
       setFetchLoading(false);
     }
-  };
+  }, [params.id, router]);
 
   useEffect(() => {
     if (user?.role === 'staff' || user?.role === 'admin') {

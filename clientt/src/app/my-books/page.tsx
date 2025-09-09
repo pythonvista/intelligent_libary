@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
@@ -42,7 +42,7 @@ const MyBooksPage: React.FC = () => {
   }, [isAuthenticated, router]);
 
   // Fetch borrowed books
-  const fetchBorrowedBooks = async () => {
+  const fetchBorrowedBooks = useCallback(async () => {
     try {
       setLoading(true);
       const response = await transactionsAPI.getMyBooks();
@@ -55,10 +55,10 @@ const MyBooksPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Handle book return
-  const handleReturn = async (bookId: string) => {
+  const handleReturn = useCallback(async (bookId: string) => {
     try {
       setReturnLoading(bookId);
       await transactionsAPI.returnBook(bookId);
@@ -73,10 +73,10 @@ const MyBooksPage: React.FC = () => {
     } finally {
       setReturnLoading(null);
     }
-  };
+  }, [fetchBorrowedBooks]);
 
   // Handle QR scan
-  const handleQRScan = async (qrCode: string) => {
+  const handleQRScan = useCallback(async (qrCode: string) => {
     try {
       setShowQRScanner(false);
       
@@ -105,7 +105,7 @@ const MyBooksPage: React.FC = () => {
         : 'Failed to process QR code';
       alert(errorMessage);
     }
-  };
+  }, [borrowedBooks, handleReturn]);
 
   useEffect(() => {
     if (isAuthenticated) {

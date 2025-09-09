@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { QrCodeIcon, PrinterIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import Button from '@/components/ui/Button';
 import { booksAPI } from '@/lib/api';
@@ -23,7 +23,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const fetchQRCode = async () => {
+  const fetchQRCode = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -37,7 +37,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookId]);
 
   const downloadQRCode = () => {
     if (!qrCodeData?.qrCodeImage) return;

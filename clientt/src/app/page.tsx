@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/layout/Layout';
 import SearchBar from '@/components/books/SearchBar';
 import BookCard from '@/components/books/BookCard';
@@ -80,7 +80,7 @@ const HomePage: React.FC = () => {
   };
 
   // Fetch recommendations
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = useCallback(async () => {
     if (!isAuthenticated || !user) return;
     
     try {
@@ -89,7 +89,7 @@ const HomePage: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch recommendations:', error);
     }
-  };
+  }, [isAuthenticated, user]);
 
   // Handle book borrowing
   const handleBorrow = async (bookId: string) => {

@@ -33,10 +33,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize auth state from localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const initializeAuth = () => {
+      if (typeof window === 'undefined') return;
+      
       try {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
@@ -50,9 +53,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Clear corrupted data
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+      } finally {
+        setIsInitialized(true);
+        setLoading(false);
       }
+    };
+
+    // Use setTimeout to ensure this runs after hydration
+    const timer = setTimeout(initializeAuth, 0);
+
+    // Listen for logout events from API interceptor
+    const handleLogout = () => {
+      setUser(null);
+      setToken(null);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('auth:logout', handleLogout);
     }
-    setLoading(false);
+
+    return () => {
+      clearTimeout(timer);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('auth:logout', handleLogout);
+      }
+    };
   }, []);
 
   // Login function
