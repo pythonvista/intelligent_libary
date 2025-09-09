@@ -1,4 +1,13 @@
 import axios from 'axios';
+import { 
+  LoginData, 
+  RegisterData, 
+  BookFormData, 
+  ProfileUpdateData, 
+  PasswordChangeData,
+  DashboardStats,
+  PaginatedResponse 
+} from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -43,22 +52,13 @@ export const authAPI = {
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
   
-  register: (userData: {
-    name: string;
-    email: string;
-    password: string;
-    phoneNumber?: string;
-    address?: string;
-  }) => api.post('/auth/register', userData),
+  register: (userData: RegisterData) => api.post('/auth/register', userData),
   
   getProfile: () => api.get('/auth/profile'),
   
-  updateProfile: (userData: any) => api.put('/auth/profile', userData),
+  updateProfile: (userData: ProfileUpdateData) => api.put('/auth/profile', userData),
   
-  changePassword: (passwords: {
-    currentPassword: string;
-    newPassword: string;
-  }) => api.post('/auth/change-password', passwords),
+  changePassword: (passwords: PasswordChangeData) => api.post('/auth/change-password', passwords),
 };
 
 // Books API functions
@@ -74,9 +74,9 @@ export const booksAPI = {
   
   getBook: (id: string) => api.get(`/books/${id}`),
   
-  createBook: (bookData: any) => api.post('/books', bookData),
+  createBook: (bookData: BookFormData) => api.post('/books', bookData),
   
-  updateBook: (id: string, bookData: any) => api.put(`/books/${id}`, bookData),
+  updateBook: (id: string, bookData: BookFormData) => api.put(`/books/${id}`, bookData),
   
   deleteBook: (id: string) => api.delete(`/books/${id}`),
   
@@ -133,7 +133,7 @@ export const adminAPI = {
   getUserActivityReport: (params?: { period?: string }) =>
     api.get('/admin/reports/user-activity', { params }),
   
-  bulkImportBooks: (books: any[]) => api.post('/admin/bulk-import', { books }),
+  bulkImportBooks: (books: BookFormData[]) => api.post('/admin/bulk-import', { books }),
 };
 
 export default api;

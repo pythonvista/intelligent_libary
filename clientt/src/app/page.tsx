@@ -14,7 +14,7 @@ import {
   ChartBarIcon
 } from '@heroicons/react/24/outline';
 
-interface Book {
+interface HomePageBook {
   _id: string;
   title: string;
   author: string;
@@ -33,7 +33,7 @@ interface Book {
 }
 
 interface BooksResponse {
-  books: Book[];
+  books: HomePageBook[];
   currentPage: number;
   totalPages: number;
   totalBooks: number;
@@ -42,9 +42,9 @@ interface BooksResponse {
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
-  const [books, setBooks] = useState<Book[]>([]);
+  const [books, setBooks] = useState<HomePageBook[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
-  const [recommendations, setRecommendations] = useState<Book[]>([]);
+  const [recommendations, setRecommendations] = useState<HomePageBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [borrowLoading, setBorrowLoading] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,8 +102,11 @@ const HomePage: React.FC = () => {
       // Refresh books and recommendations
       fetchBooks(currentPage, searchQuery, filters);
       fetchRecommendations();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to borrow book');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to borrow book'
+        : 'Failed to borrow book';
+      alert(errorMessage);
     } finally {
       setBorrowLoading(null);
     }
@@ -138,7 +141,7 @@ const HomePage: React.FC = () => {
     if (isAuthenticated) {
       fetchRecommendations();
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, fetchRecommendations]);
 
   return (
     <Layout>

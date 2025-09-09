@@ -29,8 +29,11 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
       setError('');
       const response = await booksAPI.getQRCode(bookId);
       setQrCodeData(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to generate QR code');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error && 'response' in err 
+        ? (err as any).response?.data?.message || 'Failed to generate QR code'
+        : 'Failed to generate QR code';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

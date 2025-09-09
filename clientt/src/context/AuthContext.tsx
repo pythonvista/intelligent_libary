@@ -2,28 +2,15 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authAPI } from '@/lib/api';
-
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  role: 'patron' | 'staff' | 'admin';
-  borrowedBooks?: string[];
-  preferences?: string[];
-  phoneNumber?: string;
-  address?: string;
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { User, RegisterData, ProfileUpdateData } from '@/types';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: any) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
-  updateUser: (userData: any) => Promise<void>;
+  updateUser: (userData: ProfileUpdateData) => Promise<void>;
   loading: boolean;
   isAuthenticated: boolean;
 }
@@ -80,13 +67,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('token', authToken);
         localStorage.setItem('user', JSON.stringify(userData));
       }
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Login failed');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Login failed'
+        : 'Login failed';
+      throw new Error(errorMessage);
     }
   };
 
   // Register function
-  const register = async (userData: any) => {
+  const register = async (userData: RegisterData) => {
     try {
       const response = await authAPI.register(userData);
       const { user: newUser, token: authToken } = response.data;
@@ -97,8 +87,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('token', authToken);
         localStorage.setItem('user', JSON.stringify(newUser));
       }
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Registration failed');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Registration failed'
+        : 'Registration failed';
+      throw new Error(errorMessage);
     }
   };
 
@@ -113,7 +106,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Update user function
-  const updateUser = async (userData: any) => {
+  const updateUser = async (userData: ProfileUpdateData) => {
     try {
       const response = await authAPI.updateProfile(userData);
       const updatedUser = response.data.user;
@@ -122,8 +115,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (typeof window !== 'undefined') {
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Update failed');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Update failed'
+        : 'Update failed';
+      throw new Error(errorMessage);
     }
   };
 

@@ -81,8 +81,11 @@ const SettingsPage: React.FC = () => {
       });
       
       alert('Password changed successfully!');
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to change password');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to change password'
+        : 'Failed to change password';
+      alert(errorMessage);
     } finally {
       setPasswordLoading(false);
     }

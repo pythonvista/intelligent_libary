@@ -83,8 +83,11 @@ const EditBookPage: React.FC = () => {
         },
         tags: book.tags ? book.tags.join(', ') : ''
       });
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to fetch book details');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to fetch book details'
+        : 'Failed to fetch book details';
+      alert(errorMessage);
       router.push('/admin/books');
     } finally {
       setFetchLoading(false);
@@ -95,7 +98,7 @@ const EditBookPage: React.FC = () => {
     if (user?.role === 'staff' || user?.role === 'admin') {
       fetchBook();
     }
-  }, [params.id, user]);
+  }, [params.id, user, fetchBook]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -183,8 +186,11 @@ const EditBookPage: React.FC = () => {
       
       alert('Book updated successfully!');
       router.push('/admin/books');
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to update book');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to update book'
+        : 'Failed to update book';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

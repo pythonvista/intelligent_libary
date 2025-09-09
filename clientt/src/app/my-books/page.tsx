@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
-import BookCard from '@/components/books/BookCard';
 import QRScannerComponent from '@/components/books/QRScanner';
 import Button from '@/components/ui/Button';
+import { Transaction, Book } from '@/types';
 import { transactionsAPI, booksAPI } from '@/lib/api';
 import { 
   BookOpenIcon, 
@@ -17,16 +17,7 @@ import {
 
 interface BorrowedBook {
   _id: string;
-  book: {
-    _id: string;
-    title: string;
-    author: string;
-    subject: string;
-    coverImage?: string;
-    isAvailable: boolean;
-    availableCopies: number;
-    totalCopies: number;
-  };
+  book: Book;
   borrowDate: string;
   dueDate: string;
   status: string;
@@ -56,8 +47,11 @@ const MyBooksPage: React.FC = () => {
       setLoading(true);
       const response = await transactionsAPI.getMyBooks();
       setBorrowedBooks(response.data.borrowedBooks || []);
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to fetch borrowed books');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to fetch borrowed books'
+        : 'Failed to fetch borrowed books';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -71,8 +65,11 @@ const MyBooksPage: React.FC = () => {
       
       // Refresh borrowed books
       fetchBorrowedBooks();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to return book');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to return book'
+        : 'Failed to return book';
+      alert(errorMessage);
     } finally {
       setReturnLoading(null);
     }
@@ -102,8 +99,11 @@ const MyBooksPage: React.FC = () => {
       } else {
         alert(`You don't have "${book.title}" borrowed`);
       }
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to process QR code');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to process QR code'
+        : 'Failed to process QR code';
+      alert(errorMessage);
     }
   };
 
@@ -111,7 +111,7 @@ const MyBooksPage: React.FC = () => {
     if (isAuthenticated) {
       fetchBorrowedBooks();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchBorrowedBooks]);
 
   if (!isAuthenticated) {
     return <Layout><div className="text-center">Redirecting...</div></Layout>;
@@ -314,7 +314,7 @@ const MyBooksPage: React.FC = () => {
                 <BookOpenIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No borrowed books</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  You haven't borrowed any books yet. Start exploring our collection!
+                  You haven&apos;t borrowed any books yet. Start exploring our collection!
                 </p>
                 <div className="mt-6">
                   <Button

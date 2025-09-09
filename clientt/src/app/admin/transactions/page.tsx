@@ -10,8 +10,6 @@ import { transactionsAPI } from '@/lib/api';
 import { 
   ClockIcon, 
   BookOpenIcon,
-  MagnifyingGlassIcon,
-  UserIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
   XCircleIcon
@@ -332,14 +330,14 @@ const ManageTransactionsPage: React.FC = () => {
                           {getStatusIcon(transaction.status)}
                           {transaction.status}
                         </span>
-                        {transaction.daysOverdue > 0 && (
+                        {transaction.daysOverdue && transaction.daysOverdue > 0 && (
                           <div className="text-xs text-red-600 mt-1">
                             {transaction.daysOverdue} days overdue
                           </div>
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {transaction.fine > 0 ? (
+                        {transaction.fine && transaction.fine > 0 ? (
                           <span className="text-red-600 font-medium">
                             ${transaction.fine.toFixed(2)}
                           </span>

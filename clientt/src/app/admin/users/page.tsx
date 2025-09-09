@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
 import Button from '@/components/ui/Button';
+import { Transaction } from '@/types';
 import { adminAPI } from '@/lib/api';
 import { 
   UsersIcon, 
@@ -15,13 +16,13 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
-interface User {
+interface AdminUser {
   _id: string;
   name: string;
   email: string;
   role: 'patron' | 'staff' | 'admin';
   isActive: boolean;
-  borrowedBooks: any[];
+  borrowedBooks: Transaction[];
   createdAt: string;
   phoneNumber?: string;
 }
@@ -29,7 +30,7 @@ interface User {
 const ManageUsersPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -97,8 +98,11 @@ const ManageUsersPage: React.FC = () => {
       // Refresh users list
       fetchUsers(currentPage, search, roleFilter);
       alert('User role updated successfully');
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to update user role');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to update user role'
+        : 'Failed to update user role';
+      alert(errorMessage);
     } finally {
       setActionLoading(null);
     }
@@ -122,8 +126,11 @@ const ManageUsersPage: React.FC = () => {
       // Refresh users list
       fetchUsers(currentPage, search, roleFilter);
       alert(`User account ${action}d successfully`);
-    } catch (error: any) {
-      alert(error.response?.data?.message || `Failed to ${action} user account`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || `Failed to ${action} user account`
+        : `Failed to ${action} user account`;
+      alert(errorMessage);
     } finally {
       setActionLoading(null);
     }

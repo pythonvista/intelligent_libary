@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button';
 import { booksAPI } from '@/lib/api';
 import { ArrowLeftIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 
-interface Book {
+interface BookQRData {
   _id: string;
   title: string;
   author: string;
@@ -21,7 +21,7 @@ const BookQRPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const params = useParams();
-  const [book, setBook] = useState<Book | null>(null);
+  const [book, setBook] = useState<BookQRData | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Check authorization
@@ -45,8 +45,11 @@ const BookQRPage: React.FC = () => {
       setLoading(true);
       const response = await booksAPI.getBook(params.id as string);
       setBook(response.data.book);
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to fetch book details');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to fetch book details'
+        : 'Failed to fetch book details';
+      alert(errorMessage);
       router.push('/admin/books');
     } finally {
       setLoading(false);
@@ -57,7 +60,7 @@ const BookQRPage: React.FC = () => {
     if (user?.role === 'staff' || user?.role === 'admin') {
       fetchBook();
     }
-  }, [params.id, user]);
+  }, [params.id, user, fetchBook]);
 
   if (!isAuthenticated || (user?.role !== 'staff' && user?.role !== 'admin')) {
     return <Layout><div className="text-center">Unauthorized</div></Layout>;

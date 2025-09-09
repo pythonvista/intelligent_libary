@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import { booksAPI } from '@/lib/api';
 import { 
   PlusIcon, 
@@ -18,7 +17,7 @@ import {
   BookOpenIcon
 } from '@heroicons/react/24/outline';
 
-interface Book {
+interface AdminBook {
   _id: string;
   title: string;
   author: string;
@@ -35,7 +34,7 @@ interface Book {
 const ManageBooksPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [books, setBooks] = useState<Book[]>([]);
+  const [books, setBooks] = useState<AdminBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -99,8 +98,11 @@ const ManageBooksPage: React.FC = () => {
       // Refresh books list
       fetchBooks(currentPage, search);
       alert('Book deleted successfully');
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to delete book');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to delete book'
+        : 'Failed to delete book';
+      alert(errorMessage);
     } finally {
       setDeleteLoading(null);
     }

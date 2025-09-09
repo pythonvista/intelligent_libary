@@ -51,13 +51,14 @@ const QRScannerComponent: React.FC<QRScannerProps> = ({
         await qrScannerRef.current.start();
         setHasPermission(true);
         setError('');
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('QR Scanner initialization failed:', err);
         setHasPermission(false);
         
-        if (err.name === 'NotAllowedError') {
+        const error = err as Error;
+        if (error.name === 'NotAllowedError') {
           setError('Camera permission denied. Please allow camera access and try again.');
-        } else if (err.name === 'NotFoundError') {
+        } else if (error.name === 'NotFoundError') {
           setError('No camera found on this device.');
         } else {
           setError('Failed to initialize camera. Please try again.');

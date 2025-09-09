@@ -61,8 +61,9 @@ const LoginPage: React.FC = () => {
       setLoading(true);
       await login(formData.email, formData.password);
       router.push('/');
-    } catch (error: any) {
-      setErrors({ general: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setErrors({ general: errorMessage });
     } finally {
       setLoading(false);
     }

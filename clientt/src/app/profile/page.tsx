@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { Transaction } from '@/types';
 import { transactionsAPI } from '@/lib/api';
 import { 
   UserIcon, 
@@ -73,8 +74,8 @@ const ProfilePage: React.FC = () => {
       const currentlyBorrowed = currentBooks.data.borrowedBooks || [];
       const allTransactions = history.data.transactions || [];
 
-      const overdue = currentlyBorrowed.filter((book: any) => book.daysOverdue > 0).length;
-      const returned = allTransactions.filter((t: any) => t.status === 'returned').length;
+      const overdue = currentlyBorrowed.filter((book: Transaction) => book.daysOverdue && book.daysOverdue > 0).length;
+      const returned = allTransactions.filter((t: Transaction) => t.status === 'returned').length;
 
       setStats({
         totalBorrowed: allTransactions.length,
@@ -106,8 +107,9 @@ const ProfilePage: React.FC = () => {
       await updateUser(formData);
       setIsEditing(false);
       alert('Profile updated successfully!');
-    } catch (error: any) {
-      alert(error.message || 'Failed to update profile');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

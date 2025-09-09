@@ -6,7 +6,8 @@ import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
 import DashboardStats from '@/components/admin/DashboardStats';
 import Button from '@/components/ui/Button';
-import { adminAPI, booksAPI, transactionsAPI } from '@/lib/api';
+import { Book, User, Transaction } from '@/types';
+import { adminAPI, transactionsAPI } from '@/lib/api';
 import { 
   PlusIcon, 
   UsersIcon, 
@@ -27,9 +28,9 @@ interface DashboardData {
     thisMonthTransactions: number;
     thisWeekTransactions: number;
   };
-  popularBooks: any[];
-  recentUsers: any[];
-  libraryStats: any[];
+  popularBooks: Book[];
+  recentUsers: User[];
+  libraryStats: Transaction[];
 }
 
 const AdminDashboard: React.FC = () => {
@@ -37,7 +38,7 @@ const AdminDashboard: React.FC = () => {
   const router = useRouter();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [overdueBooks, setOverdueBooks] = useState<any[]>([]);
+  const [overdueBooks, setOverdueBooks] = useState<Transaction[]>([]);
 
   // Check if user has admin/staff access
   useEffect(() => {
@@ -91,7 +92,7 @@ const AdminDashboard: React.FC = () => {
               Admin Dashboard
             </h2>
             <p className="text-sm text-gray-500">
-              Welcome back, {user?.name}! Here's what's happening in your library.
+              Welcome back, {user?.name}! Here&apos;s what&apos;s happening in your library.
             </p>
           </div>
           <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -168,7 +169,7 @@ const AdminDashboard: React.FC = () => {
                         <p className="text-sm text-red-600 font-medium">
                           {transaction.daysOverdue} days overdue
                         </p>
-                        {transaction.fine > 0 && (
+                        {transaction.fine && transaction.fine > 0 && (
                           <p className="text-xs text-gray-500">
                             Fine: ${transaction.fine}
                           </p>

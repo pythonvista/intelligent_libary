@@ -5,17 +5,16 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
-import BookCard from '@/components/books/BookCard';
 import QRCodeDisplay from '@/components/books/QRCodeDisplay';
 import Button from '@/components/ui/Button';
 import { booksAPI, transactionsAPI } from '@/lib/api';
+import { StarIcon as StarIconSolid, HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
+import BookCard from '@/components/books/BookCard';
 import { 
   BookOpenIcon, 
   UserIcon, 
-  CalendarIcon,
   TagIcon,
   StarIcon,
-  ClockIcon,
   MapPinIcon,
   HeartIcon,
   ShareIcon,
@@ -23,9 +22,8 @@ import {
   CheckCircleIcon,
   XCircleIcon
 } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid, HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 
-interface Book {
+interface BookDetailData {
   _id: string;
   title: string;
   author: string;
@@ -54,16 +52,16 @@ interface Book {
 }
 
 interface BookDetailsResponse {
-  book: Book;
-  relatedBooks: Book[];
+  book: BookDetailData;
+  relatedBooks: BookDetailData[];
 }
 
 const BookDetailPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
-  const [book, setBook] = useState<Book | null>(null);
-  const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
+  const [book, setBook] = useState<BookDetailData | null>(null);
+  const [relatedBooks, setRelatedBooks] = useState<BookDetailData[]>([]);
   const [loading, setLoading] = useState(true);
   const [borrowLoading, setBorrowLoading] = useState(false);
   const [error, setError] = useState('');
@@ -80,8 +78,11 @@ const BookDetailPage: React.FC = () => {
       const data: BookDetailsResponse = response.data;
       setBook(data.book);
       setRelatedBooks(data.relatedBooks || []);
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to fetch book details');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to fetch book details'
+        : 'Failed to fetch book details';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -100,8 +101,11 @@ const BookDetailPage: React.FC = () => {
       
       // Show success message
       alert(`Successfully borrowed "${book.title}"`);
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to borrow book');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to borrow book'
+        : 'Failed to borrow book';
+      alert(errorMessage);
     } finally {
       setBorrowLoading(false);
     }
@@ -151,7 +155,7 @@ const BookDetailPage: React.FC = () => {
 
   useEffect(() => {
     fetchBookDetails();
-  }, [params.id]);
+  }, [params.id, fetchBookDetails]);
 
   if (loading) {
     return (

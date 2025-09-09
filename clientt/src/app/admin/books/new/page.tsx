@@ -139,8 +139,11 @@ const AddBookPage: React.FC = () => {
       
       alert('Book added successfully!');
       router.push('/admin/books');
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to add book');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to add book'
+        : 'Failed to add book';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

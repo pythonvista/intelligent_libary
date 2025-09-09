@@ -78,8 +78,9 @@ const RegisterPage: React.FC = () => {
       const { confirmPassword, ...userData } = formData;
       await register(userData);
       router.push('/');
-    } catch (error: any) {
-      setErrors({ general: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      setErrors({ general: errorMessage });
     } finally {
       setLoading(false);
     }
