@@ -92,16 +92,19 @@ router.get('/scan/:qrCode', async (req, res) => {
 });
 
 // @route   GET /api/books/recommendations/:userId
-// @desc    Get book recommendations for user
+// @desc    Get book recommendations for user (ML-powered)
 // @access  Private
 router.get('/recommendations/:userId', authenticateToken, async (req, res) => {
   try {
     const userId = req.params.userId;
+    const algorithm = req.query.algorithm || 'hybrid'; // svd, nmf, tfidf, hybrid
+    const n = parseInt(req.query.n) || 10;
 
     // Get user's borrowed books to understand preferences
     const userTransactions = await Transaction.find({ user: userId })
-      .populate('book', 'subject')
-      .limit(10);
+      .populate('book')
+      .limit(50)
+      .sort({ createdAt: -1 });
 
     // Extract subjects from user's history
     const userSubjects = userTransactions
@@ -109,32 +112,60 @@ router.get('/recommendations/:userId', authenticateToken, async (req, res) => {
       .filter(Boolean)
       .filter((subject, index, arr) => arr.indexOf(subject) === index);
 
-    // If no history, recommend popular books
+    // If no history, recommend popular books (cold start)
     if (userSubjects.length === 0) {
       const popularBooks = await Book.find({ isAvailable: true })
         .sort({ borrowCount: -1 })
-        .limit(5)
+        .limit(n)
         .select('title author subject coverImage rating borrowCount');
 
       return res.json({
         recommendations: popularBooks,
-        reason: 'Popular books'
+        reason: 'Popular books (cold start)',
+        algorithm: 'popularity_based',
+        ml_powered: false
       });
     }
 
-    // Find books in user's preferred subjects
-    const recommendations = await Book.find({
-      subject: { $in: userSubjects },
-      isAvailable: true,
-      _id: { $nin: userTransactions.map(t => t.book?._id).filter(Boolean) }
-    })
-    .sort({ borrowCount: -1, 'rating.average': -1 })
-    .limit(5)
-    .select('title author subject coverImage rating borrowCount');
+    // Use ML service for recommendations
+    const MLService = require('../services/ml-integration');
+    
+    // Get all available books for ML processing
+    const availableBooks = await Book.find({ isAvailable: true });
+    
+    // Get ML recommendations
+    const mlResult = await MLService.getRecommendations({
+      userId,
+      books: availableBooks,
+      userHistory: userTransactions,
+      algorithm,
+      n
+    });
+
+    // Fetch full book details for recommended books
+    const recommendedBookIds = mlResult.recommendations.map(r => r.book_id);
+    const recommendedBooks = await Book.find({
+      _id: { $in: recommendedBookIds }
+    }).select('title author subject coverImage rating borrowCount');
+
+    // Merge scores with book data
+    const enrichedRecommendations = mlResult.recommendations.map(rec => {
+      const book = recommendedBooks.find(b => b._id.toString() === rec.book_id);
+      return {
+        ...book?.toObject(),
+        ml_score: rec.score,
+        ml_algorithm: rec.algorithm
+      };
+    }).filter(Boolean);
 
     res.json({
-      recommendations,
-      reason: `Based on your interest in: ${userSubjects.join(', ')}`
+      recommendations: enrichedRecommendations,
+      reason: `ML-powered recommendations using ${algorithm} algorithm`,
+      algorithm: mlResult.algorithm,
+      variant: mlResult.variant,
+      ml_powered: true,
+      simulated: mlResult.simulated,
+      user_interests: userSubjects.join(', ')
     });
   } catch (error) {
     console.error('Recommendations error:', error);

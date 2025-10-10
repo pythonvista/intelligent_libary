@@ -28,10 +28,44 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Book'
   }],
-  preferences: [{
-    type: String,
-    trim: true
-  }],
+  preferences: {
+    subjects: [{
+      type: String,
+      trim: true
+    }],
+    // ML-specific user behavior features
+    behaviorProfile: {
+      type: String,
+      enum: ['frequent', 'moderate', 'casual', 'power'],
+      default: 'casual'
+    },
+    avgBorrowDuration: {
+      type: Number,
+      default: 14
+    },
+    activityLevel: {
+      type: Number,
+      default: 0.5,
+      min: 0,
+      max: 1
+    },
+    // ML interaction features
+    mlProfile: {
+      latentFactors: [Number], // SVD/NMF user embedding
+      preferredAuthors: [String],
+      readingHistory: [{
+        subject: String,
+        count: Number,
+        lastBorrowed: Date
+      }],
+      diversityScore: {
+        type: Number,
+        default: 0.5,
+        min: 0,
+        max: 1
+      }
+    }
+  },
   phoneNumber: {
     type: String,
     trim: true

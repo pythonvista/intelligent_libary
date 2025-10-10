@@ -41,6 +41,39 @@ const transactionSchema = new mongoose.Schema({
   notes: {
     type: String,
     trim: true
+  },
+  // ML-specific transaction features for temporal analysis
+  mlFeatures: {
+    borrowDuration: {
+      type: Number,
+      default: 14
+    },
+    userActivityScore: {
+      type: Number,
+      default: 0.5,
+      min: 0,
+      max: 1
+    },
+    subjectMatch: {
+      type: Boolean,
+      default: false
+    },
+    temporalWeight: {
+      type: Number,
+      default: 1.0,
+      min: 0,
+      max: 1
+    },
+    // Used for A/B testing
+    recommendationAlgorithm: {
+      type: String,
+      enum: ['svd', 'nmf', 'tfidf', 'hybrid', 'popularity', 'manual'],
+      default: 'manual'
+    },
+    wasRecommended: {
+      type: Boolean,
+      default: false
+    }
   }
 }, {
   timestamps: true

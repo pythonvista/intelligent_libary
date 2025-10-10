@@ -85,6 +85,49 @@ const bookSchema = new mongoose.Schema({
   borrowCount: {
     type: Number,
     default: 0
+  },
+  // ML-specific features for advanced recommendation algorithms
+  mlFeatures: {
+    contentVector: [{
+      type: Number
+    }],
+    popularityScore: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    diversityScore: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 1
+    },
+    readabilityLevel: {
+      type: Number,
+      default: 3,
+      min: 1,
+      max: 5
+    },
+    targetAudience: {
+      type: String,
+      enum: ['general_readers', 'technical_professionals', 'academic_curious', 
+             'intellectuals', 'professionals', 'personal_growth', 'tech_enthusiasts'],
+      default: 'general_readers'
+    },
+    nlpAnalysis: {
+      themes: [String],
+      entities: [String],
+      keywords: [{
+        word: String,
+        score: Number
+      }],
+      sentiment: {
+        type: String,
+        enum: ['positive', 'neutral', 'negative'],
+        default: 'neutral'
+      }
+    }
   }
 }, {
   timestamps: true
