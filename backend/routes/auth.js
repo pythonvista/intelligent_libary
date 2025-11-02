@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const QRCode = require('qrcode');
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -23,6 +24,9 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
+    // Generate unique QR code for user
+    const qrData = `STUDENT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     // Create new user
     const user = new User({
       name,
@@ -30,7 +34,8 @@ router.post('/register', async (req, res) => {
       password,
       phoneNumber,
       address,
-      role: 'patron'
+      role: 'patron',
+      qrCode: qrData
     });
 
     await user.save();
@@ -154,6 +159,66 @@ router.post('/change-password', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Password change error:', error);
     res.status(500).json({ message: 'Failed to change password', error: error.message });
+  }
+});
+
+// @route   GET /api/auth/my-qr
+// @desc    Get user's QR code
+// @access  Private
+router.get('/my-qr', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // If user doesn't have a QR code yet, generate one
+    if (!user.qrCode) {
+      const qrData = `STUDENT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      user.qrCode = qrData;
+      await user.save();
+    }
+
+    // Generate QR code image
+    const qrCodeImage = await QRCode.toDataURL(user.qrCode);
+
+    res.json({
+      name: user.name,
+      email: user.email,
+      qrCode: user.qrCode,
+      qrCodeImage
+    });
+  } catch (error) {
+    console.error('QR code generation error:', error);
+    res.status(500).json({ message: 'Failed to generate QR code', error: error.message });
+  }
+});
+
+// @route   GET /api/auth/scan-user/:qrCode
+// @desc    Get user info by QR code (staff only)
+// @access  Private (staff/admin)
+router.get('/scan-user/:qrCode', authenticateToken, async (req, res) => {
+  try {
+    // Verify staff or admin
+    if (req.user.role !== 'staff' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Staff only.' });
+    }
+
+    const user = await User.findOne({ qrCode: req.params.qrCode })
+      .select('-password')
+      .populate({
+        path: 'borrowedBooks',
+        select: 'title author coverImage'
+      });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found for this QR code' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    console.error('User QR scan error:', error);
+    res.status(500).json({ message: 'Failed to scan user QR code', error: error.message });
   }
 });
 

@@ -77,6 +77,11 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  qrCode: {
+    type: String,
+    unique: true,
+    sparse: true // Allow null values but enforce uniqueness when present
   }
 }, {
   timestamps: true

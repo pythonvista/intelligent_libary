@@ -206,8 +206,8 @@ router.post('/', authenticateToken, requireStaff, async (req, res) => {
   try {
     const bookData = req.body;
     
-    // Generate unique QR code data
-    const qrData = `LIBRARY_BOOK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate unique QR code data with BOOK_ prefix
+    const qrData = `BOOK_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     
     // Create book
     const book = new Book({

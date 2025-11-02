@@ -364,4 +364,247 @@ router.get('/overdue', authenticateToken, requireStaff, async (req, res) => {
   }
 });
 
+// @route   POST /api/transactions/borrow-qr
+// @desc    Borrow a book via QR code scan (student scans book QR)
+// @access  Private
+router.post('/borrow-qr', authenticateToken, async (req, res) => {
+  try {
+    const { bookQrCode } = req.body;
+    const userId = req.user._id;
+
+    if (!bookQrCode) {
+      return res.status(400).json({ message: 'Book QR code is required' });
+    }
+
+    // Find book by QR code
+    const book = await Book.findOne({ qrCode: bookQrCode });
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found for this QR code' });
+    }
+
+    // Check if book is available
+    if (book.availableCopies <= 0) {
+      return res.status(400).json({ message: 'Book is not available for borrowing' });
+    }
+
+    // Check if user already has this book borrowed
+    const existingTransaction = await Transaction.findOne({
+      user: userId,
+      book: book._id,
+      status: { $in: ['active', 'overdue'] }
+    });
+
+    if (existingTransaction) {
+      return res.status(400).json({ message: 'You already have this book borrowed' });
+    }
+
+    // Check user's current borrowed books limit (e.g., max 5 books)
+    const userActiveTransactions = await Transaction.countDocuments({
+      user: userId,
+      status: { $in: ['active', 'overdue'] }
+    });
+
+    const borrowLimit = 5;
+    if (userActiveTransactions >= borrowLimit) {
+      return res.status(400).json({ 
+        message: `You have reached the maximum borrowing limit of ${borrowLimit} books` 
+      });
+    }
+
+    // Create due date (14 days from now)
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 14);
+
+    // Create transaction
+    const transaction = new Transaction({
+      user: userId,
+      book: book._id,
+      dueDate,
+      status: 'active'
+    });
+
+    await transaction.save();
+
+    // Update book availability
+    await book.borrowBook();
+
+    // Add book to user's borrowed books
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { borrowedBooks: book._id }
+    });
+
+    // Populate transaction data for response
+    await transaction.populate('book', 'title author coverImage');
+
+    res.status(201).json({
+      message: 'Book borrowed successfully via QR code',
+      transaction,
+      book: {
+        _id: book._id,
+        title: book.title,
+        author: book.author,
+        coverImage: book.coverImage
+      }
+    });
+  } catch (error) {
+    console.error('QR borrow error:', error);
+    res.status(500).json({ message: 'Failed to borrow book via QR code', error: error.message });
+  }
+});
+
+// @route   POST /api/transactions/process-qr
+// @desc    Process transaction via dual QR scan (admin scans user + book)
+// @access  Staff only
+router.post('/process-qr', authenticateToken, requireStaff, async (req, res) => {
+  try {
+    const { userQrCode, bookQrCode, action } = req.body;
+
+    if (!userQrCode || !bookQrCode) {
+      return res.status(400).json({ message: 'Both user and book QR codes are required' });
+    }
+
+    if (!action || !['borrow', 'return'].includes(action)) {
+      return res.status(400).json({ message: 'Action must be either "borrow" or "return"' });
+    }
+
+    // Find user by QR code
+    const user = await User.findOne({ qrCode: userQrCode });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found for this QR code' });
+    }
+
+    // Find book by QR code
+    const book = await Book.findOne({ qrCode: bookQrCode });
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found for this QR code' });
+    }
+
+    if (action === 'borrow') {
+      // Process borrowing
+      if (book.availableCopies <= 0) {
+        return res.status(400).json({ message: 'Book is not available for borrowing' });
+      }
+
+      // Check if user already has this book borrowed
+      const existingTransaction = await Transaction.findOne({
+        user: user._id,
+        book: book._id,
+        status: { $in: ['active', 'overdue'] }
+      });
+
+      if (existingTransaction) {
+        return res.status(400).json({ message: 'User already has this book borrowed' });
+      }
+
+      // Check user's current borrowed books limit
+      const userActiveTransactions = await Transaction.countDocuments({
+        user: user._id,
+        status: { $in: ['active', 'overdue'] }
+      });
+
+      const borrowLimit = 5;
+      if (userActiveTransactions >= borrowLimit) {
+        return res.status(400).json({ 
+          message: `User has reached the maximum borrowing limit of ${borrowLimit} books` 
+        });
+      }
+
+      // Create due date
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14);
+
+      // Create transaction
+      const transaction = new Transaction({
+        user: user._id,
+        book: book._id,
+        dueDate,
+        status: 'active'
+      });
+
+      await transaction.save();
+
+      // Update book availability
+      await book.borrowBook();
+
+      // Add book to user's borrowed books
+      await User.findByIdAndUpdate(user._id, {
+        $addToSet: { borrowedBooks: book._id }
+      });
+
+      await transaction.populate('book', 'title author coverImage');
+      await transaction.populate('user', 'name email');
+
+      return res.status(201).json({
+        message: `Book borrowed successfully for ${user.name}`,
+        action: 'borrow',
+        transaction,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email
+        },
+        book: {
+          _id: book._id,
+          title: book.title,
+          author: book.author
+        }
+      });
+    } else if (action === 'return') {
+      // Process returning
+      const transaction = await Transaction.findOne({
+        user: user._id,
+        book: book._id,
+        status: { $in: ['active', 'overdue'] }
+      })
+      .populate('book', 'title author')
+      .populate('user', 'name email');
+
+      if (!transaction) {
+        return res.status(404).json({ 
+          message: 'No active borrowing record found for this user and book combination' 
+        });
+      }
+
+      // Update transaction
+      transaction.returnDate = new Date();
+      transaction.status = 'returned';
+      
+      // Calculate fine if overdue
+      if (transaction.daysOverdue > 0) {
+        transaction.fineAmount = transaction.calculateFine();
+      }
+
+      await transaction.save();
+
+      // Update book availability
+      await book.returnBook();
+
+      // Remove book from user's borrowed books
+      await User.findByIdAndUpdate(user._id, {
+        $pull: { borrowedBooks: book._id }
+      });
+
+      return res.json({
+        message: `Book returned successfully by ${user.name}`,
+        action: 'return',
+        transaction,
+        fineAmount: transaction.fineAmount,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email
+        },
+        book: {
+          _id: book._id,
+          title: book.title,
+          author: book.author
+        }
+      });
+    }
+  } catch (error) {
+    console.error('QR process error:', error);
+    res.status(500).json({ message: 'Failed to process QR transaction', error: error.message });
+  }
+});
+
 module.exports = router;
