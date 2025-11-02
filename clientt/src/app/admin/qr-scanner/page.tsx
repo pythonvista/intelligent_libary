@@ -20,6 +20,7 @@ interface ScannedUser {
   _id: string;
   name: string;
   email: string;
+  qrCode?: string;
   borrowedBooks: any[];
 }
 
