@@ -10,7 +10,8 @@ import {
   XMarkIcon,
   MagnifyingGlassIcon,
   BellIcon,
-  CogIcon
+  CogIcon,
+  QrCodeIcon
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
 import clsx from 'clsx';
@@ -29,8 +30,17 @@ const Navbar: React.FC = () => {
     { name: 'My Library', href: '/my-books', icon: UserIcon, requireAuth: true },
   ];
 
+  // Add patron-specific navigation
+  if (user?.role === 'patron') {
+    navigation.push(
+      { name: 'Borrow Book', href: '/borrow-book', icon: QrCodeIcon, requireAuth: true }
+    );
+  }
+
+  // Add staff/admin-specific navigation
   if (user?.role === 'staff' || user?.role === 'admin') {
     navigation.push(
+      { name: 'QR Scanner', href: '/admin/qr-scanner', icon: QrCodeIcon, requireAuth: true },
       { name: 'Admin Dashboard', href: '/admin', icon: CogIcon, requireAuth: true }
     );
   }

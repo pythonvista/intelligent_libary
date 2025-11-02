@@ -6,9 +6,10 @@ import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
 import SearchBar from '@/components/books/SearchBar';
 import BookCard from '@/components/books/BookCard';
+import QRScannerComponent from '@/components/books/QRScanner';
 import Button from '@/components/ui/Button';
 import { booksAPI, transactionsAPI } from '@/lib/api';
-import { BookOpenIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, QrCodeIcon } from '@heroicons/react/24/outline';
 
 interface BooksPageBook {
   _id: string;
@@ -37,7 +38,7 @@ interface BooksResponse {
 }
 
 const BooksPageContent: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -49,6 +50,7 @@ const BooksPageContent: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalBooks, setTotalBooks] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showQRScanner, setShowQRScanner] = useState(false);
   const [filters, setFilters] = useState({
     subject: '',
     sortBy: 'createdAt',
@@ -133,6 +135,33 @@ const BooksPageContent: React.FC = () => {
     fetchBooks(page, searchQuery, filters);
   };
 
+  // Handle QR scan for borrowing
+  const handleQRScan = async (qrCode: string) => {
+    setShowQRScanner(false);
+    
+    if (!qrCode.startsWith('BOOK_')) {
+      alert('Invalid QR code. Please scan a book QR code.');
+      return;
+    }
+
+    try {
+      setBorrowLoading('qr-scan');
+      const response = await transactionsAPI.borrowBookQR(qrCode);
+      
+      // Refresh books to update availability
+      fetchBooks(currentPage, searchQuery, filters);
+      
+      alert(`✅ ${response.data.message}\n\nBook: ${response.data.book?.title}\nDue Date: ${new Date(response.data.transaction?.dueDate).toLocaleDateString()}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any).response?.data?.message || 'Failed to borrow book via QR'
+        : 'Failed to borrow book via QR';
+      alert(`❌ ${errorMessage}`);
+    } finally {
+      setBorrowLoading(null);
+    }
+  };
+
   // Initialize from URL parameters
   useEffect(() => {
     const initialFilters = {
@@ -176,12 +205,29 @@ const BooksPageContent: React.FC = () => {
         <div className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="text-center">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Library Collection
-              </h1>
-              <p className="text-lg text-gray-600 mb-8">
-                Discover and borrow from our extensive collection of books
-              </p>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex-1"></div>
+                <div className="flex-1 text-center">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    Library Collection
+                  </h1>
+                  <p className="text-lg text-gray-600">
+                    Discover and borrow from our extensive collection of books
+                  </p>
+                </div>
+                <div className="flex-1 flex justify-end">
+                  {isAuthenticated && user?.role === 'patron' && (
+                    <Button
+                      variant="primary"
+                      onClick={() => setShowQRScanner(true)}
+                      className="inline-flex items-center"
+                    >
+                      <QrCodeIcon className="h-5 w-5 mr-2" />
+                      Scan to Borrow
+                    </Button>
+                  )}
+                </div>
+              </div>
               
               {/* Search Bar */}
               <div className="max-w-2xl mx-auto">
@@ -334,6 +380,15 @@ const BooksPageContent: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* QR Scanner Modal */}
+      {isAuthenticated && user?.role === 'patron' && (
+        <QRScannerComponent
+          isOpen={showQRScanner}
+          onScan={handleQRScan}
+          onClose={() => setShowQRScanner(false)}
+        />
+      )}
     </Layout>
   );
 };

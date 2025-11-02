@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import UserQRCode from '@/components/user/UserQRCode';
 import { Transaction } from '@/types';
 import { transactionsAPI } from '@/lib/api';
 import { 
@@ -294,6 +295,11 @@ const ProfilePage: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* User QR Code - Only show for patrons */}
+        {user.role === 'patron' && (
+          <UserQRCode />
+        )}
 
         {/* Quick Actions */}
         <div className="bg-white rounded-lg shadow-sm border p-6">

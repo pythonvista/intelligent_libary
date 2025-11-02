@@ -74,6 +74,10 @@ export const authAPI = {
   updateProfile: (userData: ProfileUpdateData) => api.put('/auth/profile', userData),
   
   changePassword: (passwords: PasswordChangeData) => api.post('/auth/change-password', passwords),
+
+  getMyQR: () => api.get('/auth/my-qr'),
+
+  scanUserQR: (qrCode: string) => api.get(`/auth/scan-user/${qrCode}`),
 };
 
 // Books API functions
@@ -123,6 +127,11 @@ export const transactionsAPI = {
   }) => api.get('/transactions/all', { params }),
   
   getOverdueTransactions: () => api.get('/transactions/overdue'),
+
+  borrowBookQR: (bookQrCode: string) => api.post('/transactions/borrow-qr', { bookQrCode }),
+
+  processQR: (userQrCode: string, bookQrCode: string, action: 'borrow' | 'return') => 
+    api.post('/transactions/process-qr', { userQrCode, bookQrCode, action }),
 };
 
 // Admin API functions
