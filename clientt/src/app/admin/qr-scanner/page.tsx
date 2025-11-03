@@ -72,23 +72,26 @@ const AdminQRScannerPage: React.FC = () => {
     setIsScannerOpen(false);
     setProcessing(true);
 
+    // Trim whitespace from scanned QR code
+    const trimmedQR = qrCode.trim();
+
     try {
       if (scanStep === 'user') {
-        // Scanning user QR code
-        if (!qrCode.startsWith('STUDENT_')) {
-          alert('Invalid QR code. Please scan a student QR code.');
+        // Scanning user QR code - let backend validate format
+        if (!trimmedQR || trimmedQR.length < 5) {
+          alert('Invalid QR code format. Please scan a valid student QR code.\n\nScanned: ' + trimmedQR);
           setProcessing(false);
           return;
         }
 
-        const response = await authAPI.scanUserQR(qrCode);
+        const response = await authAPI.scanUserQR(trimmedQR);
         setScannedUser(response.data.user);
         setScanStep('book');
         setProcessing(false);
       } else if (scanStep === 'book') {
-        // Scanning book QR code
-        if (!qrCode.startsWith('BOOK_')) {
-          alert('Invalid QR code. Please scan a book QR code.');
+        // Scanning book QR code - let backend validate format
+        if (!trimmedQR || trimmedQR.length < 5) {
+          alert('Invalid QR code format. Please scan a valid book QR code.\n\nScanned: ' + trimmedQR);
           setProcessing(false);
           return;
         }
@@ -102,7 +105,7 @@ const AdminQRScannerPage: React.FC = () => {
 
         const response = await transactionsAPI.processQR(
           scannedUser.qrCode || '',
-          qrCode,
+          trimmedQR,
           action
         );
 
@@ -125,9 +128,16 @@ const AdminQRScannerPage: React.FC = () => {
         ? (err as any).response?.data?.message || 'Failed to process QR code'
         : 'Failed to process QR code';
       
+      // Log for debugging
+      console.error('QR Scan Error:', {
+        step: scanStep,
+        scanned: trimmedQR,
+        error: errorMessage
+      });
+      
       setResult({
         success: false,
-        message: errorMessage
+        message: `${errorMessage}\n\nScanned QR: ${trimmedQR.substring(0, 50)}${trimmedQR.length > 50 ? '...' : ''}`
       });
       setScanStep('complete');
       setProcessing(false);

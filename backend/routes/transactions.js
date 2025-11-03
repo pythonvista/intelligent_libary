@@ -376,10 +376,21 @@ router.post('/borrow-qr', authenticateToken, async (req, res) => {
       return res.status(400).json({ message: 'Book QR code is required' });
     }
 
-    // Find book by QR code
-    const book = await Book.findOne({ qrCode: bookQrCode });
+    // Trim whitespace from QR code
+    const trimmedQR = String(bookQrCode).trim();
+
+    // Find book by QR code (try exact match first)
+    let book = await Book.findOne({ qrCode: trimmedQR });
+    
+    // If not found, try with old format prefix (for backward compatibility)
+    if (!book && !trimmedQR.startsWith('BOOK_') && !trimmedQR.startsWith('LIBRARY_BOOK_')) {
+      book = await Book.findOne({ qrCode: `LIBRARY_BOOK_${trimmedQR}` });
+    }
+
     if (!book) {
-      return res.status(404).json({ message: 'Book not found for this QR code' });
+      return res.status(404).json({ 
+        message: `Book not found for this QR code. Please ensure you're scanning a valid book QR code.\n\nScanned: ${trimmedQR.substring(0, 50)}` 
+      });
     }
 
     // Check if book is available
@@ -467,16 +478,30 @@ router.post('/process-qr', authenticateToken, requireStaff, async (req, res) => 
       return res.status(400).json({ message: 'Action must be either "borrow" or "return"' });
     }
 
+    // Trim whitespace from QR codes
+    const trimmedUserQR = String(userQrCode).trim();
+    const trimmedBookQR = String(bookQrCode).trim();
+
     // Find user by QR code
-    const user = await User.findOne({ qrCode: userQrCode });
+    let user = await User.findOne({ qrCode: trimmedUserQR });
     if (!user) {
-      return res.status(404).json({ message: 'User not found for this QR code' });
+      return res.status(404).json({ 
+        message: `User not found for this QR code. Please ensure you're scanning a valid student QR code.\n\nScanned: ${trimmedUserQR.substring(0, 50)}` 
+      });
     }
 
-    // Find book by QR code
-    const book = await Book.findOne({ qrCode: bookQrCode });
+    // Find book by QR code (try exact match first)
+    let book = await Book.findOne({ qrCode: trimmedBookQR });
+    
+    // If not found, try with old format prefix (for backward compatibility)
+    if (!book && !trimmedBookQR.startsWith('BOOK_') && !trimmedBookQR.startsWith('LIBRARY_BOOK_')) {
+      book = await Book.findOne({ qrCode: `LIBRARY_BOOK_${trimmedBookQR}` });
+    }
+
     if (!book) {
-      return res.status(404).json({ message: 'Book not found for this QR code' });
+      return res.status(404).json({ 
+        message: `Book not found for this QR code. Please ensure you're scanning a valid book QR code.\n\nScanned: ${trimmedBookQR.substring(0, 50)}` 
+      });
     }
 
     if (action === 'borrow') {

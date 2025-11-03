@@ -204,7 +204,10 @@ router.get('/scan-user/:qrCode', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Staff only.' });
     }
 
-    const user = await User.findOne({ qrCode: req.params.qrCode })
+    // Trim whitespace from QR code
+    const trimmedQR = String(req.params.qrCode).trim();
+
+    const user = await User.findOne({ qrCode: trimmedQR })
       .select('-password')
       .populate({
         path: 'borrowedBooks',
@@ -212,7 +215,9 @@ router.get('/scan-user/:qrCode', authenticateToken, async (req, res) => {
       });
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found for this QR code' });
+      return res.status(404).json({ 
+        message: `User not found for this QR code. Please ensure you're scanning a valid student QR code.\n\nScanned: ${trimmedQR.substring(0, 50)}` 
+      });
     }
 
     res.json({ user });

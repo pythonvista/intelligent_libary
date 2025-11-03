@@ -47,18 +47,21 @@ const BorrowBookPage: React.FC = () => {
     setProcessing(true);
     setResult(null);
 
+    // Trim whitespace from scanned QR code
+    const trimmedQR = qrCode.trim();
+
     try {
-      // Check if this is a book QR code (starts with BOOK_)
-      if (!qrCode.startsWith('BOOK_')) {
+      // Basic validation - let backend handle format checking
+      if (!trimmedQR || trimmedQR.length < 5) {
         setResult({
           success: false,
-          message: 'Invalid QR code. Please scan a book QR code.'
+          message: `Invalid QR code format. Please scan a valid book QR code.\n\nScanned: ${trimmedQR}`
         });
         return;
       }
 
       // Borrow the book using the QR code
-      const response = await transactionsAPI.borrowBookQR(qrCode);
+      const response = await transactionsAPI.borrowBookQR(trimmedQR);
 
       setResult({
         success: true,
@@ -71,9 +74,15 @@ const BorrowBookPage: React.FC = () => {
         ? (err as any).response?.data?.message || 'Failed to borrow book'
         : 'Failed to borrow book';
       
+      // Log for debugging
+      console.error('QR Scan Error:', {
+        scanned: trimmedQR,
+        error: errorMessage
+      });
+      
       setResult({
         success: false,
-        message: errorMessage
+        message: `${errorMessage}\n\nScanned QR: ${trimmedQR.substring(0, 50)}${trimmedQR.length > 50 ? '...' : ''}`
       });
     } finally {
       setProcessing(false);

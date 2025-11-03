@@ -139,14 +139,18 @@ const HomePage: React.FC = () => {
   const handleQRScan = async (qrCode: string) => {
     setShowQRScanner(false);
     
-    if (!qrCode.startsWith('BOOK_')) {
-      alert('Invalid QR code. Please scan a book QR code.');
+    // Trim whitespace from scanned QR code
+    const trimmedQR = qrCode.trim();
+    
+    // Basic validation - check if QR code looks reasonable
+    if (!trimmedQR || trimmedQR.length < 5) {
+      alert('Invalid QR code format. Please scan a valid book QR code.\n\nScanned: ' + trimmedQR);
       return;
     }
 
     try {
       setBorrowLoading('qr-scan');
-      const response = await transactionsAPI.borrowBookQR(qrCode);
+      const response = await transactionsAPI.borrowBookQR(trimmedQR);
       
       // Refresh books and recommendations
       fetchBooks(currentPage, searchQuery, filters);
@@ -157,7 +161,14 @@ const HomePage: React.FC = () => {
       const errorMessage = error instanceof Error && 'response' in error 
         ? (error as any).response?.data?.message || 'Failed to borrow book via QR'
         : 'Failed to borrow book via QR';
-      alert(`❌ ${errorMessage}`);
+      
+      // Show what was scanned for debugging
+      console.error('QR Scan Error:', {
+        scanned: trimmedQR,
+        error: errorMessage
+      });
+      
+      alert(`❌ ${errorMessage}\n\nScanned QR: ${trimmedQR.substring(0, 50)}${trimmedQR.length > 50 ? '...' : ''}`);
     } finally {
       setBorrowLoading(null);
     }
