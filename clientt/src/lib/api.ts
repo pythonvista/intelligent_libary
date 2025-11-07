@@ -132,6 +132,20 @@ export const transactionsAPI = {
 
   processQR: (userQrCode: string, bookQrCode: string, action: 'borrow' | 'return') => 
     api.post('/transactions/process-qr', { userQrCode, bookQrCode, action }),
+
+  createBorrowRequest: (bookId: string, scannedQRCode: string) => 
+    api.post('/transactions/borrow-request', { bookId, scannedQRCode }),
+
+  getBorrowRequests: (params?: { status?: string; page?: number; limit?: number }) =>
+    api.get('/transactions/borrow-requests', { params }),
+
+  approveBorrowRequest: (requestId: string) => 
+    api.post(`/transactions/borrow-requests/${requestId}/approve`),
+
+  rejectBorrowRequest: (requestId: string, reason?: string) => 
+    api.post(`/transactions/borrow-requests/${requestId}/reject`, { reason }),
+
+  getMyRequests: () => api.get('/transactions/my-requests'),
 };
 
 // Admin API functions

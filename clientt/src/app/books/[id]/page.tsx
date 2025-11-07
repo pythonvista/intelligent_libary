@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
 import QRCodeDisplay from '@/components/books/QRCodeDisplay';
+import BorrowWithQRModal from '@/components/books/BorrowWithQRModal';
 import Button from '@/components/ui/Button';
 import { booksAPI, transactionsAPI } from '@/lib/api';
 import { StarIcon as StarIconSolid, HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
@@ -66,6 +67,7 @@ const BookDetailPage: React.FC = () => {
   const [borrowLoading, setBorrowLoading] = useState(false);
   const [error, setError] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
+  const [showBorrowModal, setShowBorrowModal] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
   // Fetch book details
@@ -92,23 +94,34 @@ const BookDetailPage: React.FC = () => {
   const handleBorrow = async () => {
     if (!book || !isAuthenticated) return;
     
-    try {
-      setBorrowLoading(true);
-      await transactionsAPI.borrowBook(book._id);
-      
-      // Refresh book details to update availability
-      await fetchBookDetails();
-      
-      // Show success message
-      alert(`Successfully borrowed "${book.title}"`);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error && 'response' in error 
-        ? (error as any).response?.data?.message || 'Failed to borrow book'
-        : 'Failed to borrow book';
-      alert(errorMessage);
-    } finally {
-      setBorrowLoading(false);
+    // For students, show QR modal. For staff/admin, use old direct borrow
+    if (user?.role === 'patron') {
+      setShowBorrowModal(true);
+    } else {
+      try {
+        setBorrowLoading(true);
+        await transactionsAPI.borrowBook(book._id);
+        
+        // Refresh book details to update availability
+        await fetchBookDetails();
+        
+        // Show success message
+        alert(`Successfully borrowed "${book.title}"`);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error && 'response' in error 
+          ? (error as any).response?.data?.message || 'Failed to borrow book'
+          : 'Failed to borrow book';
+        alert(errorMessage);
+      } finally {
+        setBorrowLoading(false);
+      }
     }
+  };
+
+  const handleBorrowSuccess = async () => {
+    setShowBorrowModal(false);
+    // Refresh book details to update availability
+    await fetchBookDetails();
   };
 
   // Handle favorite toggle
@@ -454,6 +467,17 @@ const BookDetailPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Borrow with QR Modal */}
+      {isAuthenticated && user?.role === 'patron' && book && (
+        <BorrowWithQRModal
+          isOpen={showBorrowModal}
+          onClose={() => setShowBorrowModal(false)}
+          bookId={book._id}
+          bookTitle={book.title}
+          onSuccess={handleBorrowSuccess}
+        />
+      )}
     </Layout>
   );
 };

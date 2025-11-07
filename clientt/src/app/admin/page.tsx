@@ -13,7 +13,8 @@ import {
   UsersIcon, 
   BookOpenIcon, 
   ChartBarIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 
 interface DashboardData {
@@ -199,7 +200,7 @@ const AdminDashboard: React.FC = () => {
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
               Management
             </h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <button
                 onClick={() => router.push('/admin/books')}
                 className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -214,6 +215,14 @@ const AdminDashboard: React.FC = () => {
               >
                 <UsersIcon className="h-5 w-5 mr-2" />
                 Manage Users
+              </button>
+              
+              <button
+                onClick={() => router.push('/admin/borrow-requests')}
+                className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <ClockIcon className="h-5 w-5 mr-2" />
+                Borrow Requests
               </button>
               
               <button

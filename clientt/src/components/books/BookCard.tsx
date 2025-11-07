@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import Button from '@/components/ui/Button';
+import BorrowWithQRModal from './BorrowWithQRModal';
 import { useAuth } from '@/context/AuthContext';
 import clsx from 'clsx';
 
@@ -41,6 +42,7 @@ interface BookCardProps {
   showActions?: boolean;
   isLoading?: boolean;
   borrowed?: boolean;
+  onBorrowSuccess?: () => void;
 }
 
 const BookCard: React.FC<BookCardProps> = ({
@@ -50,12 +52,24 @@ const BookCard: React.FC<BookCardProps> = ({
   showActions = true,
   isLoading = false,
   borrowed = false,
+  onBorrowSuccess,
 }) => {
   const { isAuthenticated, user } = useAuth();
+  const [showBorrowModal, setShowBorrowModal] = useState(false);
 
   const handleBorrow = () => {
-    if (onBorrow) {
+    // For students, show QR modal. For staff/admin, use old direct borrow
+    if (user?.role === 'patron') {
+      setShowBorrowModal(true);
+    } else if (onBorrow) {
       onBorrow(book._id);
+    }
+  };
+
+  const handleBorrowSuccess = () => {
+    setShowBorrowModal(false);
+    if (onBorrowSuccess) {
+      onBorrowSuccess();
     }
   };
 
@@ -230,6 +244,17 @@ const BookCard: React.FC<BookCardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Borrow with QR Modal */}
+      {isAuthenticated && user?.role === 'patron' && (
+        <BorrowWithQRModal
+          isOpen={showBorrowModal}
+          onClose={() => setShowBorrowModal(false)}
+          bookId={book._id}
+          bookTitle={book.title}
+          onSuccess={handleBorrowSuccess}
+        />
+      )}
     </div>
   );
 };

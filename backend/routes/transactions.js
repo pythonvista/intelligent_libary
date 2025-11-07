@@ -2,6 +2,7 @@ const express = require('express');
 const Book = require('../models/Book');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
+const BorrowRequest = require('../models/BorrowRequest');
 const { authenticateToken, requireStaff } = require('../middleware/auth');
 
 const router = express.Router();
@@ -629,6 +630,265 @@ router.post('/process-qr', authenticateToken, requireStaff, async (req, res) => 
   } catch (error) {
     console.error('QR process error:', error);
     res.status(500).json({ message: 'Failed to process QR transaction', error: error.message });
+  }
+});
+
+// @route   POST /api/transactions/borrow-request
+// @desc    Create a borrow request (user scans QR to verify)
+// @access  Private
+router.post('/borrow-request', authenticateToken, async (req, res) => {
+  try {
+    const { bookId, scannedQRCode } = req.body;
+    const userId = req.user._id;
+
+    if (!bookId || !scannedQRCode) {
+      return res.status(400).json({ message: 'Book ID and scanned QR code are required' });
+    }
+
+    // Find the book
+    const book = await Book.findById(bookId);
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    // Trim whitespace from scanned QR
+    const trimmedQR = String(scannedQRCode).trim();
+
+    // Verify the scanned QR code matches the book's QR code
+    if (book.qrCode !== trimmedQR) {
+      return res.status(400).json({ 
+        message: 'QR code mismatch. Please scan the QR code from the physical book you want to borrow.',
+        expectedQR: book.qrCode,
+        scannedQR: trimmedQR
+      });
+    }
+
+    // Check if book is available
+    if (book.availableCopies <= 0) {
+      return res.status(400).json({ message: 'Book is not available for borrowing' });
+    }
+
+    // Check if user already has this book borrowed
+    const existingTransaction = await Transaction.findOne({
+      user: userId,
+      book: bookId,
+      status: { $in: ['active', 'overdue'] }
+    });
+
+    if (existingTransaction) {
+      return res.status(400).json({ message: 'You already have this book borrowed' });
+    }
+
+    // Check if there's already a pending request for this user and book
+    const existingRequest = await BorrowRequest.findOne({
+      user: userId,
+      book: bookId,
+      status: 'pending'
+    });
+
+    if (existingRequest) {
+      return res.status(400).json({ 
+        message: 'You already have a pending request for this book. Please wait for admin approval.' 
+      });
+    }
+
+    // Check user's current borrowed books limit
+    const userActiveTransactions = await Transaction.countDocuments({
+      user: userId,
+      status: { $in: ['active', 'overdue'] }
+    });
+
+    const borrowLimit = 5;
+    if (userActiveTransactions >= borrowLimit) {
+      return res.status(400).json({ 
+        message: `You have reached the maximum borrowing limit of ${borrowLimit} books` 
+      });
+    }
+
+    // Create borrow request
+    const borrowRequest = new BorrowRequest({
+      user: userId,
+      book: bookId,
+      scannedQRCode: trimmedQR,
+      status: 'pending'
+    });
+
+    await borrowRequest.save();
+
+    // Populate for response
+    await borrowRequest.populate('book', 'title author coverImage');
+    await borrowRequest.populate('user', 'name email');
+
+    res.status(201).json({
+      message: 'Borrow request submitted successfully. Waiting for admin approval.',
+      request: borrowRequest
+    });
+  } catch (error) {
+    console.error('Borrow request error:', error);
+    res.status(500).json({ message: 'Failed to create borrow request', error: error.message });
+  }
+});
+
+// @route   GET /api/transactions/borrow-requests
+// @desc    Get all borrow requests (admin)
+// @access  Staff only
+router.get('/borrow-requests', authenticateToken, requireStaff, async (req, res) => {
+  try {
+    const status = req.query.status || 'pending';
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+
+    const query = { status };
+    const total = await BorrowRequest.countDocuments(query);
+
+    const requests = await BorrowRequest.find(query)
+      .populate('user', 'name email')
+      .populate('book', 'title author coverImage isbn')
+      .populate('reviewedBy', 'name')
+      .sort({ requestedAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    res.json({
+      requests,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalRequests: total
+    });
+  } catch (error) {
+    console.error('Get borrow requests error:', error);
+    res.status(500).json({ message: 'Failed to fetch borrow requests', error: error.message });
+  }
+});
+
+// @route   POST /api/transactions/borrow-requests/:requestId/approve
+// @desc    Approve a borrow request
+// @access  Staff only
+router.post('/borrow-requests/:requestId/approve', authenticateToken, requireStaff, async (req, res) => {
+  try {
+    const requestId = req.params.requestId;
+    const reviewerId = req.user._id;
+
+    const borrowRequest = await BorrowRequest.findById(requestId)
+      .populate('user', 'name email')
+      .populate('book', 'title author');
+
+    if (!borrowRequest) {
+      return res.status(404).json({ message: 'Borrow request not found' });
+    }
+
+    if (borrowRequest.status !== 'pending') {
+      return res.status(400).json({ 
+        message: `Request has already been ${borrowRequest.status}` 
+      });
+    }
+
+    // Check if book is still available
+    const book = await Book.findById(borrowRequest.book._id);
+    if (book.availableCopies <= 0) {
+      await borrowRequest.reject(reviewerId, 'Book is no longer available');
+      return res.status(400).json({ 
+        message: 'Book is no longer available. Request has been rejected.' 
+      });
+    }
+
+    // Create due date (14 days from now)
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 14);
+
+    // Create transaction
+    const transaction = new Transaction({
+      user: borrowRequest.user._id,
+      book: borrowRequest.book._id,
+      dueDate,
+      status: 'active'
+    });
+
+    await transaction.save();
+
+    // Update book availability
+    await book.borrowBook();
+
+    // Add book to user's borrowed books
+    await User.findByIdAndUpdate(borrowRequest.user._id, {
+      $addToSet: { borrowedBooks: borrowRequest.book._id }
+    });
+
+    // Update request
+    borrowRequest.transaction = transaction._id;
+    await borrowRequest.approve(reviewerId);
+
+    // Populate for response
+    await borrowRequest.populate('book', 'title author coverImage');
+    await borrowRequest.populate('user', 'name email');
+
+    res.json({
+      message: 'Borrow request approved successfully',
+      request: borrowRequest,
+      transaction
+    });
+  } catch (error) {
+    console.error('Approve request error:', error);
+    res.status(500).json({ message: 'Failed to approve request', error: error.message });
+  }
+});
+
+// @route   POST /api/transactions/borrow-requests/:requestId/reject
+// @desc    Reject a borrow request
+// @access  Staff only
+router.post('/borrow-requests/:requestId/reject', authenticateToken, requireStaff, async (req, res) => {
+  try {
+    const requestId = req.params.requestId;
+    const reviewerId = req.user._id;
+    const { reason } = req.body;
+
+    const borrowRequest = await BorrowRequest.findById(requestId)
+      .populate('user', 'name email')
+      .populate('book', 'title author');
+
+    if (!borrowRequest) {
+      return res.status(404).json({ message: 'Borrow request not found' });
+    }
+
+    if (borrowRequest.status !== 'pending') {
+      return res.status(400).json({ 
+        message: `Request has already been ${borrowRequest.status}` 
+      });
+    }
+
+    // Reject the request
+    await borrowRequest.reject(reviewerId, reason || null);
+
+    // Populate for response
+    await borrowRequest.populate('book', 'title author coverImage');
+    await borrowRequest.populate('user', 'name email');
+
+    res.json({
+      message: 'Borrow request rejected',
+      request: borrowRequest
+    });
+  } catch (error) {
+    console.error('Reject request error:', error);
+    res.status(500).json({ message: 'Failed to reject request', error: error.message });
+  }
+});
+
+// @route   GET /api/transactions/my-requests
+// @desc    Get user's borrow requests
+// @access  Private
+router.get('/my-requests', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const requests = await BorrowRequest.find({ user: userId })
+      .populate('book', 'title author coverImage')
+      .populate('reviewedBy', 'name')
+      .sort({ requestedAt: -1 });
+
+    res.json({ requests });
+  } catch (error) {
+    console.error('Get my requests error:', error);
+    res.status(500).json({ message: 'Failed to fetch requests', error: error.message });
   }
 });
 
