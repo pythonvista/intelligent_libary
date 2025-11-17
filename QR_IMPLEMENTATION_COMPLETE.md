@@ -128,7 +128,7 @@ npm run dev
 
 ### Automatic Calculations
 - 💰 Due dates (14 days from borrow)
-- 💰 Fine amounts ($1/day, max $50)
+- 💰 Fine amounts (₦1/day, max ₦50)
 - 💰 Overdue status detection
 - 💰 Renewal tracking (up to 3 times)
 
@@ -154,8 +154,8 @@ npm run dev
 Maximum books per student: 5
 Loan period: 14 days
 Renewals allowed: 3 times
-Late fee: $1 per day
-Maximum fine: $50
+Late fee: ₦1 per day
+Maximum fine: ₦50
 ```
 
 ### QR Code Formats

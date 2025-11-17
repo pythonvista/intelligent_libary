@@ -172,7 +172,7 @@ const AdminDashboard: React.FC = () => {
                         </p>
                         {transaction.fine && transaction.fine > 0 && (
                           <p className="text-xs text-gray-500">
-                            Fine: ${transaction.fine}
+                            Fine: ₦{transaction.fine}
                           </p>
                         )}
                       </div>

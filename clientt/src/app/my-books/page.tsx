@@ -287,7 +287,7 @@ const MyBooksPage: React.FC = () => {
                             
                             {borrowedBook.fine > 0 && (
                               <span className="text-red-600 font-medium">
-                                Fine: ${borrowedBook.fine.toFixed(2)}
+                                Fine: ₦{borrowedBook.fine.toFixed(2)}
                               </span>
                             )}
                           </div>

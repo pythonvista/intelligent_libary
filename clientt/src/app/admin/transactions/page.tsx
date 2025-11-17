@@ -339,10 +339,10 @@ const ManageTransactionsPage: React.FC = () => {
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {transaction.fine && transaction.fine > 0 ? (
                           <span className="text-red-600 font-medium">
-                            ${transaction.fine.toFixed(2)}
+                            ₦{transaction.fine.toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-gray-400">$0.00</span>
+                          <span className="text-gray-400">₦0.00</span>
                         )}
                       </td>
                     </tr>

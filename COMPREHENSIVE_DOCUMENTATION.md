@@ -1168,8 +1168,8 @@ if (returnDate === null && now > dueDate) {
 
 function calculateFine() {
   daysOverdue = Math.ceil((now - dueDate) / (1000*60*60*24));
-  fine = daysOverdue * $1_per_day;
-  return Math.min(fine, $50_max);
+  fine = daysOverdue * ₦1_per_day;
+  return Math.min(fine, ₦50_max);
 }
 ```
 
@@ -2218,17 +2218,17 @@ Quick options:
 
 A: **Small library (100 users, 1000 books):**
 - Frontend (Vercel): Free tier
-- Backend (Railway): $5-10/month
+- Backend (Railway): ₦5-10/month
 - Database (MongoDB Atlas): Free tier (512MB)
 - ML Service: Same as backend or simulation mode (free)
-- **Total: $5-10/month or FREE with free tiers**
+- **Total: ₦5-10/month or FREE with free tiers**
 
 **Medium library (500 users, 5000 books):**
-- Frontend: $20/month
-- Backend: $20/month
-- Database: $25/month
-- ML Service: $20/month
-- **Total: ~$85/month**
+- Frontend: ₦20/month
+- Backend: ₦20/month
+- Database: ₦25/month
+- ML Service: ₦20/month
+- **Total: ~₦85/month**
 
 **Q: How do I add new books?**
 

@@ -37,7 +37,7 @@ router.get('/all', authenticateToken, requireStaff, async (req, res) => {
       const diffTime = today - dueDate;
       const daysOverdue = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
       
-      // Calculate fine (e.g., $1 per day overdue)
+      // Calculate fine (e.g., ₦1 per day overdue)
       const fine = transaction.status === 'overdue' ? daysOverdue * 1 : 0;
 
       return {

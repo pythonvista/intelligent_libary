@@ -59,8 +59,8 @@ Book:    BOOK_1234567890_ABCDEFGH
 | Max Books | 5 per student |
 | Loan Period | 14 days |
 | Renewals | 3 times max |
-| Late Fee | $1 per day |
-| Max Fine | $50 |
+| Late Fee | ₦1 per day |
+| Max Fine | ₦50 |
 
 ---
 

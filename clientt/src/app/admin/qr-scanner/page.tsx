@@ -395,7 +395,7 @@ const AdminQRScannerPage: React.FC = () => {
                     {result.fineAmount !== undefined && result.fineAmount > 0 && (
                       <div className="pt-3 border-t border-gray-200 bg-yellow-50 -m-4 p-4 rounded">
                         <div className="text-sm text-yellow-700">Fine Amount</div>
-                        <div className="font-bold text-yellow-900 text-lg">${result.fineAmount.toFixed(2)}</div>
+                        <div className="font-bold text-yellow-900 text-lg">₦{result.fineAmount.toFixed(2)}</div>
                         <div className="text-xs text-yellow-600 mt-1">Please collect payment from student</div>
                       </div>
                     )}

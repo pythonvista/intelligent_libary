@@ -251,7 +251,7 @@ const BorrowBookPage: React.FC = () => {
           <ul className="text-sm text-gray-600 space-y-2">
             <li>• Books are borrowed for 14 days by default</li>
             <li>• You can borrow up to 5 books at a time</li>
-            <li>• Late returns may incur fines ($1 per day, max $50)</li>
+            <li>• Late returns may incur fines (₦1 per day, max ₦50)</li>
             <li>• You can renew books up to 3 times from your "My Books" page</li>
             <li>• If you have trouble scanning, visit the front desk for assistance</li>
           </ul>

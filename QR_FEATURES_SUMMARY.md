@@ -130,8 +130,8 @@ Student brings book to desk
 - **Duplicate Prevention:** Can't borrow same book twice
 
 ### Return Rules
-- **Late Fee:** $1 per day
-- **Maximum Fine:** $50
+- **Late Fee:** ₦1 per day
+- **Maximum Fine:** ₦50
 - **Automatic Calculation:** Fines calculated on return
 - **Grace Period:** None (fines start day after due date)
 

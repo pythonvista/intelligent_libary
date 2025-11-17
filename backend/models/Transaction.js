@@ -100,8 +100,8 @@ transactionSchema.methods.calculateFine = function() {
   const daysOverdue = this.daysOverdue;
   if (daysOverdue <= 0) return 0;
   
-  const finePerDay = 1; // $1 per day
-  const maxFine = 50; // Maximum fine of $50
+  const finePerDay = 1; // ₦1 per day
+  const maxFine = 50; // Maximum fine of ₦50
   
   return Math.min(daysOverdue * finePerDay, maxFine);
 };
